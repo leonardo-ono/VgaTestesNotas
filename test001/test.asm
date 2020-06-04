@@ -29,6 +29,9 @@
 		%define CRTC_OVERFLOW     7
 		%define CRTC_MAXSCANLINE  9
 		
+		%define AC_INDEX	    03c0h ; Attribute controller index register
+		%define AC_MODE_CONTROL	  10h ; Index of Mode COntrol register in AC
+		
 		bits 16
 		org 100h
 		
@@ -74,21 +77,17 @@ start:
 	.next_y:
 
 	
-		call wait_retrace
-		; call wait_retrace
-		;call wait_retrace
-		;call wait_retrace
 
-		mov si, black
-		mov bx, [scroll_prev]
-		add bx, 30
-		mov dx, 50
-		call draw_image
-		mov si, black
-		mov bx, [scroll_prev]
-		add bx, 40
-		mov dx, 70
-		call draw_image
+		;mov si, black
+		;mov bx, [scroll_prev]
+		;add bx, 30
+		;mov dx, 50
+		;call draw_image
+		;mov si, black
+		;mov bx, [scroll_prev]
+		;add bx, 40
+		;mov dx, 70
+		;call draw_image
 		
 		mov si, ship
 		mov bx, bp
@@ -104,6 +103,12 @@ start:
 		mov ax, 20 ; bp ; bp y scroll
 		mov di, bp ; bp x scroll
 		call move_to
+
+		call wait_retrace
+		; call wait_retrace
+		;call wait_retrace
+		;call wait_retrace
+
 		
 		; wait for keypress
 		mov ah, 1
@@ -113,7 +118,7 @@ start:
 		
 		mov [scroll_prev], bp
 		
-		add bp, 4
+		add bp, 1
 		cmp bp, 320
 		jb .next_y
 		mov bp, 0
@@ -354,7 +359,7 @@ move_to:
 		mov    dx, CRTC_INDEX
 		out    dx, ax		
 		
-ret ; <--		
+; ret ; <--		
 		
 		; 4 pixels fix for panning
 		
@@ -449,7 +454,22 @@ split_screen:
 		mov dx, CRTC_DATA
 		out dx, al
 	
+		; Turn on split screen pal pen suppression, so the split screen
+		; won't be subject to pel panning as is the non split screen portion.
+
+		mov  dx, INPUT_STATUS
+		in   al, dx                  	; Reset the AC Index/Data toggle to index state
+		mov  al, AC_MODE_CONTROL + 20h 	; Bit 5 set to prevent screen blanking
+		mov  dx, AC_INDEX				; Point AC to Index/Data register
+		out  dx, al
+		inc  dx							; Point to AC Data reg (for reads only)
+		in   al, dx						; Get the current AC Mode Control reg
+		or   al, 20h						; Enable split scrn Pel panning suppress.
+		dec  dx							; Point to AC Index/Data reg (for writes only)
+		out  dx, al		
+	
 		ret
+		
 		scroll_prev dw 0 
 		
 		; image file
