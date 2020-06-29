@@ -3,7 +3,7 @@
 ; Written by Leonardo Ono (ono.leo80@gmail.com)
 ; June 24, 2020
 ;
-; Target Machine: ?
+; Target Machine: PC-XT 4.7Mhz
 ; Target OS: DOS
 ; Assembler: nasm 2.14
 ; Linker: tlink (Turbo Link v2.0)
@@ -164,9 +164,19 @@ segment timer
 
 	int8h_handler:
 			pusha
+			push ds
+			
+			; needs to set ds because		
+			; this int 8 can be called when
+			; ds is set to another value			
+			mov ax, data
+			mov ds, ax
+			
 			call far play_next_note
 			mov al, 20h
 			out 20h, al
+			
+			pop ds
 			popa
 			iret
 	
